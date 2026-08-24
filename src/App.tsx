@@ -28,7 +28,7 @@ export default function App() {
 
   async function autoFind() {
     setBusy(true); setMessage('Maz Fast is planning evidence-bound search queries…');
-    try { const queries = await invoke<string[]>('plan_search', { trade, area }); setMessage(`Maz Fast created ${queries.length} queries. Gosom discovery will run them, then five verification passes will be required before calling.`); }
+    try { const queries = await invoke<string[]>('plan_search', { trade, area }); setMessage(`Maz Fast created ${queries.length} queries. Gosom is discovering businesses…`); const count = await invoke<number>('discover_leads', { queries }); setMessage(`Discovered ${count} businesses. Five verification passes are required before calling.`); await load(); }
     catch (error) { setMessage(`Automatic discovery unavailable: ${String(error)}. CSV import remains available.`); }
     finally { setBusy(false); }
   }

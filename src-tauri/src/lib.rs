@@ -1,6 +1,7 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
 use std::fs;
+use std::process::Command;
 use tauri::{AppHandle, Manager};
 
 #[derive(Debug, Serialize)]
@@ -173,6 +174,21 @@ fn import_csv(app: AppHandle, contents: String) -> Result<usize, String> {
 }
 
 #[tauri::command]
+fn discover_leads(app: AppHandle, queries: Vec<String>) -> Result<usize, String> {
+    let resource_dir = app.path().resource_dir().map_err(|error| error.to_string())?;
+    let executable = resource_dir.join("gosom.exe");
+    if !executable.exists() { return Err("Gosom sidecar is not installed".to_string()); }
+    let dir = app.path().app_data_dir().map_err(|error| error.to_string())?.join("discovery");
+    fs::create_dir_all(&dir).map_err(|error| error.to_string())?;
+    let input = dir.join("queries.txt"); let output = dir.join("results.csv");
+    fs::write(&input, format!("{}\n", queries.join("\n"))).map_err(|error| error.to_string())?;
+    let result = Command::new(executable).arg("-input").arg(&input).arg("-results").arg(&output).arg("-fast-mode").arg("-exit-on-inactivity").arg("30s").output().map_err(|error| error.to_string())?;
+    if !result.status.success() { return Err(String::from_utf8_lossy(&result.stderr).trim().to_string()); }
+    if !output.exists() { return Err("Gosom completed without a CSV result".to_string()); }
+    import_csv(app, fs::read_to_string(output).map_err(|error| error.to_string())?)
+}
+
+#[tauri::command]
 fn smart_review(business_name: String, website: Option<String>, evidence: String) -> Result<String, String> {
     let body = serde_json::json!({
         "model": "lfm2.5-8b:latest",
@@ -200,7 +216,7 @@ fn save_outcome(app: AppHandle, id: i64, outcome: String) -> Result<(), String> 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![list_leads, save_outcome, model_status, plan_search, import_csv, smart_review])
+        .invoke_handler(tauri::generate_handler![list_leads, save_outcome, model_status, plan_search, import_csv, discover_leads, smart_review])
         .run(tauri::generate_context!())
         .expect("error while running LeadFinder");
 }
