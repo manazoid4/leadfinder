@@ -1,6 +1,6 @@
 # LeadFinder V1 audit and delivery plan
 
-Date: 2026-08-24  
+Date: 2026-08-24
 Status: audit complete; implementation not started in this pass
 
 ## Executive verdict
