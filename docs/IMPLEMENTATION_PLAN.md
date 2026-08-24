@@ -4,10 +4,11 @@ LeadFinder is a standalone Windows/Tauri product for Maz Works client acquisitio
 
 ## Vertical slices
 
-1. **Desktop shell + call slice — in progress**
+1. **Desktop shell + call slice — complete**
    - Rust-owned SQLite, seeded lead, deterministic eligibility/opener, Call View, outcome persistence.
-2. **Discovery — planned**
-   - Gosom Tauri sidecar plus CSV import fallback, normalisation and dedupe.
+2. **Discovery — in progress**
+   - Maz Fast (`phi4-mini:latest`) query planning, automatic-discovery UI, internal CSV import fallback and Maz Smart (`lfm2.5-8b:latest`) evidence review are wired.
+   - Gosom sidecar execution and full raw-business ingestion remain next.
 3. **Probe — planned**
    - Conservative HTTP/Playwright evidence, `PROBE_BLOCKED`, `FORM_SUSPECT`, gap reason and confidence.
 4. **Eligibility — planned**
@@ -21,7 +22,7 @@ LeadFinder is a standalone Windows/Tauri product for Maz Works client acquisitio
 
 ## Current status
 
-The initial shell is implemented locally: the frontend calls Tauri commands, SQLite is owned by Rust, a test lead is seeded, deterministic eligibility and opener text are visible, and outcomes persist by lead ID. Discovery, probe, TPS/CTPS and 9router are intentionally not claimed as shipped yet.
+The shell is packaged and installed locally. Rust owns SQLite; the desktop now discovers the configured Ollama models, uses Maz Fast to create evidence-bound search queries, imports CSVs without manual database work, and exposes Maz Smart review restricted to captured evidence. Gosom execution, website probing and the five-pass gate are scaffolded in the UI/data model but are not yet claimed as complete.
 
 ## Operating constraints
 

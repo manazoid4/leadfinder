@@ -1,5 +1,5 @@
 use rusqlite::{params, Connection};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fs;
 use tauri::{AppHandle, Manager};
 
@@ -17,6 +17,37 @@ pub struct Lead {
     eligible: bool,
     opener: String,
     outcome: Option<String>,
+    verification_count: i64,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ModelStatus {
+    fast_model: String,
+    smart_model: String,
+    ollama_ready: bool,
+    installed_models: Vec<String>,
+    message: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaTags {
+    models: Vec<OllamaModel>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaModel {
+    name: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaChatResponse {
+    message: OllamaMessage,
+}
+
+#[derive(Debug, Deserialize)]
+struct OllamaMessage {
+    content: String,
 }
 
 fn connection(app: &AppHandle) -> Result<Connection, String> {
@@ -38,10 +69,12 @@ fn connection(app: &AppHandle) -> Result<Connection, String> {
           confidence TEXT NOT NULL,
           eligible INTEGER NOT NULL,
           opener TEXT NOT NULL,
-          outcome TEXT
+          outcome TEXT,
+          verification_count INTEGER NOT NULL DEFAULT 1
         );",
     )
     .map_err(|error| error.to_string())?;
+    let _ = db.execute("ALTER TABLE leads ADD COLUMN verification_count INTEGER NOT NULL DEFAULT 1", []);
     db.execute(
         "INSERT OR IGNORE INTO leads (id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener)
          VALUES (1,'Derby Roofing & Co','Roofing','Derby','01332 555 014',NULL,'NO_WEBSITE','certain',1,
@@ -56,7 +89,7 @@ fn connection(app: &AppHandle) -> Result<Connection, String> {
 fn list_leads(app: AppHandle) -> Result<Vec<Lead>, String> {
     let db = connection(&app)?;
     let mut statement = db
-        .prepare("SELECT id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener,outcome FROM leads ORDER BY id")
+        .prepare("SELECT id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener,outcome,verification_count FROM leads ORDER BY id")
         .map_err(|error| error.to_string())?;
     let rows = statement
         .query_map([], |row| {
@@ -72,10 +105,87 @@ fn list_leads(app: AppHandle) -> Result<Vec<Lead>, String> {
                 eligible: row.get::<_, i64>(8)? == 1,
                 opener: row.get(9)?,
                 outcome: row.get(10)?,
+                verification_count: row.get(11)?,
             })
         })
         .map_err(|error| error.to_string())?;
     rows.map(|row| row.map_err(|error| error.to_string())).collect()
+}
+
+#[tauri::command]
+fn model_status() -> Result<ModelStatus, String> {
+    const FAST: &str = "phi4-mini:latest";
+    const SMART: &str = "lfm2.5-8b:latest";
+    let response = reqwest::blocking::get("http://127.0.0.1:11434/api/tags");
+    match response {
+        Ok(response) => {
+            let tags: OllamaTags = response.json().map_err(|error| error.to_string())?;
+            let installed_models = tags.models.into_iter().map(|model| model.name).collect::<Vec<_>>();
+            let fast_ready = installed_models.iter().any(|model| model == FAST);
+            let smart_ready = installed_models.iter().any(|model| model == SMART);
+            Ok(ModelStatus {
+                fast_model: FAST.to_string(),
+                smart_model: SMART.to_string(),
+                ollama_ready: fast_ready && smart_ready,
+                installed_models,
+                message: if fast_ready && smart_ready { "Maz Fast + Maz Smart ready".to_string() } else { "One or more configured local models are missing".to_string() },
+            })
+        }
+        Err(error) => Ok(ModelStatus {
+            fast_model: FAST.to_string(),
+            smart_model: SMART.to_string(),
+            ollama_ready: false,
+            installed_models: Vec::new(),
+            message: format!("Ollama unavailable: {error}"),
+        }),
+    }
+}
+
+#[tauri::command]
+fn plan_search(trade: String, area: String) -> Result<Vec<String>, String> {
+    let prompt = format!("Create exactly 5 concise public search queries for finding {trade} businesses in {area}. Return JSON only as {{\"queries\":[\"...\"]}}. Do not invent business names or facts.");
+    let body = serde_json::json!({
+        "model": "phi4-mini:latest",
+        "messages": [{"role": "system", "content": "You are Maz Fast, a query planner. Never claim a business exists."}, {"role": "user", "content": prompt}],
+        "format": "json", "stream": false, "keep_alive": "10m", "options": {"temperature": 0.1, "num_predict": 180}
+    });
+    let response = reqwest::blocking::Client::new().post("http://127.0.0.1:11434/api/chat").json(&body).send().map_err(|error| error.to_string())?;
+    if !response.status().is_success() { return Err(format!("Ollama returned {}", response.status())); }
+    let result: OllamaChatResponse = response.json().map_err(|error| error.to_string())?;
+    let parsed: serde_json::Value = serde_json::from_str(&result.message.content).map_err(|error| format!("Maz Fast returned invalid JSON: {error}"))?;
+    parsed.get("queries").and_then(|value| value.as_array()).map(|queries| queries.iter().filter_map(|value| value.as_str().map(str::to_owned)).take(5).collect()).filter(|queries: &Vec<String>| !queries.is_empty()).ok_or_else(|| "Maz Fast returned no queries".to_string())
+}
+
+#[tauri::command]
+fn import_csv(app: AppHandle, contents: String) -> Result<usize, String> {
+    let db = connection(&app)?;
+    let mut imported = 0usize;
+    for (index, line) in contents.lines().enumerate() {
+        if index == 0 && line.to_ascii_lowercase().contains("business") { continue; }
+        let columns = line.split(',').map(|value| value.trim().trim_matches('"')).collect::<Vec<_>>();
+        if columns.len() < 4 || columns[0].is_empty() || columns[3].is_empty() { continue; }
+        let next_id: i64 = db.query_row("SELECT COALESCE(MAX(id), 0) + 1 FROM leads", [], |row| row.get(0)).map_err(|error| error.to_string())?;
+        let website = columns.get(4).filter(|value| !value.is_empty()).copied();
+        db.execute("INSERT INTO leads (id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener,outcome,verification_count) VALUES (?1,?2,?3,?4,?5,?6,'UNCERTAIN','uncertain',0,'My name\'s Maz from Maz Works. I was looking at your business online earlier and wanted to check something — how do customers normally arrange a quote or visit with you?',NULL,1)", params![next_id, columns[0], columns[1], columns[2], columns[3], website]).map_err(|error| error.to_string())?;
+        imported += 1;
+    }
+    Ok(imported)
+}
+
+#[tauri::command]
+fn smart_review(business_name: String, website: Option<String>, evidence: String) -> Result<String, String> {
+    let body = serde_json::json!({
+        "model": "lfm2.5-8b:latest",
+        "messages": [
+            {"role": "system", "content": "You are Maz Smart. Review only the supplied evidence. Never invent facts, never change eligibility, and return at most 60 words."},
+            {"role": "user", "content": format!("Business: {business_name}\nWebsite: {}\nEvidence: {evidence}\nReturn a concise advisory review and list any uncertainty.", website.unwrap_or_else(|| "not found".to_string()))}
+        ],
+        "stream": false, "keep_alive": "10m", "options": {"temperature": 0.1, "num_predict": 120}
+    });
+    let response = reqwest::blocking::Client::new().post("http://127.0.0.1:11434/api/chat").json(&body).send().map_err(|error| error.to_string())?;
+    if !response.status().is_success() { return Err(format!("Ollama returned {}", response.status())); }
+    let result: OllamaChatResponse = response.json().map_err(|error| error.to_string())?;
+    Ok(result.message.content.chars().take(600).collect())
 }
 
 #[tauri::command]
@@ -90,7 +200,7 @@ fn save_outcome(app: AppHandle, id: i64, outcome: String) -> Result<(), String> 
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_log::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![list_leads, save_outcome])
+        .invoke_handler(tauri::generate_handler![list_leads, save_outcome, model_status, plan_search, import_csv, smart_review])
         .run(tauri::generate_context!())
         .expect("error while running LeadFinder");
 }
