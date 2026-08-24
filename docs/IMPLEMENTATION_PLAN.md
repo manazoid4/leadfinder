@@ -4,11 +4,10 @@ LeadFinder is a standalone Windows/Tauri product for Maz Works client acquisitio
 
 ## Vertical slices
 
-1. **Desktop shell + call slice — complete**
-   - Rust-owned SQLite, seeded lead, deterministic eligibility/opener, Call View, outcome persistence.
-2. **Discovery — in progress**
-   - Maz Fast (`phi4-mini:latest`) query planning, automatic-discovery UI, internal CSV import fallback and Maz Smart (`lfm2.5-8b:latest`) evidence review are wired.
-   - Gosom sidecar execution and full raw-business ingestion remain next.
+1. **Desktop shell + call slice — blocked by audit findings**
+   - Packaging exists, but SQLite initialization fails and the seeded lead is unsafe. Eligibility, opener, and Save + Next are not complete.
+2. **Discovery — blocked by audit findings**
+   - Maz Fast query planning and CSV/Gosom scaffolding exist, but the packaged Gosom path is wrong and the positional CSV parser corrupts real Gosom rows.
 3. **Probe — planned**
    - Conservative HTTP/Playwright evidence, `PROBE_BLOCKED`, `FORM_SUSPECT`, gap reason and confidence.
 4. **Eligibility — planned**
@@ -22,7 +21,7 @@ LeadFinder is a standalone Windows/Tauri product for Maz Works client acquisitio
 
 ## Current status
 
-The shell is packaged and installed locally. Rust owns SQLite; the desktop now discovers the configured Ollama models, uses Maz Fast to create evidence-bound search queries, imports CSVs without manual database work, and exposes Maz Smart review restricted to captured evidence. Gosom execution, website probing and the five-pass gate are scaffolded in the UI/data model but are not yet claimed as complete.
+The installed shell is a prototype and must not be used for live cold calling. The multi-perspective audit found blocking SQLite, Gosom-path, CSV-mapping, verification, compliance, calling-flow, and responsive-UI failures. The authoritative repair sequence and release gates are in [V1_AUDIT_AND_PLAN.md](V1_AUDIT_AND_PLAN.md); executable tasks are in `tasks/plan.md` and `tasks/todo.md`.
 
 ## Operating constraints
 
