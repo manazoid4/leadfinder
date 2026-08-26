@@ -167,7 +167,11 @@ fn import_csv(app: AppHandle, contents: String) -> Result<usize, String> {
         if columns.len() < 4 || columns[0].is_empty() || columns[3].is_empty() { continue; }
         let next_id: i64 = db.query_row("SELECT COALESCE(MAX(id), 0) + 1 FROM leads", [], |row| row.get(0)).map_err(|error| error.to_string())?;
         let website = columns.get(4).filter(|value| !value.is_empty()).copied();
-        db.execute("INSERT INTO leads (id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener,outcome,verification_count) VALUES (?1,?2,?3,?4,?5,?6,'UNCERTAIN','uncertain',0,'My name\'s Maz from Maz Works. I was looking at your business online earlier and wanted to check something — how do customers normally arrange a quote or visit with you?',NULL,1)", params![next_id, columns[0], columns[1], columns[2], columns[3], website]).map_err(|error| error.to_string())?;
+        let opener = "My name's Maz from Maz Works. I was looking at your business online earlier and wanted to check something — how do customers normally arrange a quote or visit with you?";
+        db.execute(
+            "INSERT INTO leads (id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener,outcome,verification_count) VALUES (?1,?2,?3,?4,?5,?6,'UNCERTAIN','uncertain',0,?7,NULL,1)",
+            params![next_id, columns[0], columns[1], columns[2], columns[3], website, opener],
+        ).map_err(|error| error.to_string())?;
         imported += 1;
     }
     Ok(imported)
