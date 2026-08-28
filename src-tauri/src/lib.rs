@@ -76,13 +76,15 @@ fn connection(app: &AppHandle) -> Result<Connection, String> {
     )
     .map_err(|error| error.to_string())?;
     let _ = db.execute("ALTER TABLE leads ADD COLUMN verification_count INTEGER NOT NULL DEFAULT 1", []);
+
+    // Remove the original prototype seed if it exists. Production data should only
+    // enter LeadFinder through an explicit discovery or import action.
     db.execute(
-        "INSERT OR IGNORE INTO leads (id,business_name,trade,area,phone,website,gap_reason,confidence,eligible,opener)
-         VALUES (1,'Derby Roofing & Co','Roofing','Derby','01332 555 014',NULL,'NO_WEBSITE','certain',1,
-         'My name\'s Maz from Maz Works. I was looking your business up earlier and couldn\'t find a proper website for you. Are most new enquiries coming through phone, social media or referrals at the moment?')",
-        [],
+        "DELETE FROM leads WHERE business_name = ?1 AND phone = ?2",
+        params!["Derby Roofing & Co", "01332 555 014"],
     )
     .map_err(|error| error.to_string())?;
+
     Ok(db)
 }
 
