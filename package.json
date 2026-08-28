@@ -2,6 +2,7 @@
   "name": "cusersmanazleadfinder",
   "private": true,
   "version": "0.0.0",
+  "description": "Local-first lead discovery and calling workstation for Maz Works.",
   "type": "module",
   "scripts": {
     "dev": "vite",
