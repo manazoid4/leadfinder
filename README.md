@@ -1,32 +1,42 @@
-# React + TypeScript + Vite
+# LeadFinder
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Local-first lead discovery and calling workstation for Maz Works.
 
-Currently, two official plugins are available:
+LeadFinder is a Tauri desktop app for finding local businesses, importing lead data, reviewing evidence, and managing a structured outbound calling workflow. The frontend is React + TypeScript; the desktop/backend layer is Rust + SQLite.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Current status
 
-## React Compiler
+**Prototype / pre-V1. Do not use for live cold calling yet.**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+The core desktop shell, local database, CSV import, Gosom integration, and local Ollama model hooks exist, but the compliance and verification gates are still being completed. See [`docs/V1_AUDIT_AND_PLAN.md`](docs/V1_AUDIT_AND_PLAN.md) for the current audit and release gates.
 
-## Expanding the Oxlint configuration
+## Stack
 
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
+- React 19 + TypeScript + Vite
+- Tauri 2
+- Rust + SQLite (`rusqlite`)
+- Gosom for local-business discovery
+- Ollama for bounded local model assistance
 
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+## Development
+
+```bash
+npm install
+npm run tauri dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Useful checks:
+
+```bash
+npm run lint
+npm run build
+cd src-tauri && cargo check
+```
+
+## Product principle
+
+LeadFinder should fail closed: a lead must not become callable just because data exists. Verification, suppression/compliance checks, evidence, and deterministic eligibility belong below the UI.
+
+## Repository
+
+Built by Maz Works. Source: https://github.com/manazoid4/leadfinder
