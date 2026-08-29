@@ -1,42 +1,26 @@
 # LeadFinder
 
-Local-first lead discovery and calling workstation for Maz Works.
+Local-first lead discovery, research, demo generation, manual outreach, and pipeline tracking for Maz Works.
 
-LeadFinder is a Tauri desktop app for finding local businesses, importing lead data, reviewing evidence, and managing a structured outbound calling workflow. The frontend is React + TypeScript; the desktop/backend layer is Rust + SQLite.
+## Run
 
-## Current status
-
-**Prototype / pre-V1. Do not use for live cold calling yet.**
-
-The core desktop shell, local database, CSV import, Gosom integration, and local Ollama model hooks exist, but the compliance and verification gates are still being completed. See [`docs/V1_AUDIT_AND_PLAN.md`](docs/V1_AUDIT_AND_PLAN.md) for the current audit and release gates.
-
-## Stack
-
-- React 19 + TypeScript + Vite
-- Tauri 2
-- Rust + SQLite (`rusqlite`)
-- Gosom for local-business discovery
-- Ollama for bounded local model assistance
-
-## Development
-
-```bash
+```powershell
 npm install
 npm run tauri dev
 ```
 
-Useful checks:
+The desktop app stores leads in SQLite under the Tauri app-data directory. It bundles Gosom for premises-based Google Maps discovery and ProjectDiscovery httpx/wappalyzergo for deterministic technology detection. Online companies use the separate web-search path.
 
-```bash
+Model calls go only through 9router's OpenAI-compatible `/v1/chat/completions` endpoint. Inputs are capped at 2KB, raw HTML is rejected, calls are capped per process run, and there is no local-model fallback.
+
+## Verification
+
+```powershell
 npm run lint
 npm run build
-cd src-tauri && cargo check
+cd src-tauri
+cargo test
+cargo clippy -- -D warnings
 ```
 
-## Product principle
-
-LeadFinder should fail closed: a lead must not become callable just because data exists. Verification, suppression/compliance checks, evidence, and deterministic eligibility belong below the UI.
-
-## Repository
-
-Built by Maz Works. Source: https://github.com/manazoid4/leadfinder
+Demo routes are config-driven under `public/demo-configs`, use `noindex`, and render with the shared engraving module. Example: `#/demo/rfid-wallets-uk`.

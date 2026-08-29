@@ -1,0 +1,18 @@
+{
+  "slug": "rfid-wallets-uk",
+  "template": "shopify-engraving-preview",
+  "company": "RFID Wallets UK",
+  "ownerFirstName": null,
+  "productName": "Custom Engraved RFID Blocking Real Leather Wallet 1135",
+  "productUrl": "https://www.rfidwallets.co.uk/products/custom-engraved-wallet-for-mans-rfid-blocking-wallets-real-leather-note-case-billfold-purse-1135",
+  "productImageUrl": "https://cdn.shopify.com/s/files/1/0527/7253/6474/files/il_fullxfull.6310848555_1kls_1.jpg?v=1728216816",
+  "price": "£24.99",
+  "accentHex": "#a06b19",
+  "engraving": {
+    "x": 0.48,
+    "y": 0.57,
+    "maxWidth": 0.34,
+    "colour": [48, 30, 20],
+    "maxCharacters": 16
+  }
+}

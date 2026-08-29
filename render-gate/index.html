@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex,nofollow" />
+    <link rel="icon" href="data:," />
+    <title>RFID Wallet Engraving Preview — Render Gate</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, sans-serif; background: #f3efe7; color: #17130f; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; }
+      main { width: min(1100px, 100%); margin: 0 auto; padding: 32px 20px 48px; }
+      header { display: flex; justify-content: space-between; gap: 24px; align-items: end; margin-bottom: 24px; }
+      h1 { margin: 4px 0; font-family: Georgia, serif; font-size: clamp(32px, 5vw, 58px); line-height: .98; }
+      .eyebrow { margin: 0; color: #755a39; font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+      .price { font-size: 24px; font-weight: 800; }
+      .stage { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, .75fr); background: #fff; border: 1px solid #d7cbb9; box-shadow: 0 18px 50px rgba(57, 39, 20, .12); overflow: hidden; }
+      .canvas-wrap { padding: 18px; background: #e7dfd2; display: grid; place-items: center; min-height: 520px; }
+      canvas { display: block; width: 100%; height: auto; max-height: 72vh; object-fit: contain; background: #ddd; }
+      .controls { padding: 36px 30px; display: flex; flex-direction: column; justify-content: center; gap: 18px; }
+      label { font-weight: 800; }
+      input { width: 100%; margin-top: 8px; padding: 15px 14px; border: 1px solid #8c7556; border-radius: 4px; font: inherit; font-size: 18px; }
+      input:focus { outline: 3px solid #d4a62a; outline-offset: 2px; }
+      .note { color: #675c4f; line-height: 1.55; }
+      .status { min-height: 24px; font-weight: 700; color: #765316; }
+      .source { color: #675c4f; font-size: 13px; overflow-wrap: anywhere; }
+      @media (max-width: 760px) {
+        main { padding: 20px 12px 32px; }
+        header { align-items: start; flex-direction: column; }
+        .stage { grid-template-columns: 1fr; }
+        .canvas-wrap { min-height: 0; padding: 10px; }
+        .controls { padding: 24px 18px; }
+        canvas { max-height: none; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <p class="eyebrow">Live personalisation concept</p>
+          <h1>See your engraving before checkout.</h1>
+        </div>
+        <div class="price">£24.99</div>
+      </header>
+      <section class="stage">
+        <div class="canvas-wrap"><canvas id="preview" aria-label="Personalised wallet preview"></canvas></div>
+        <div class="controls">
+          <p class="eyebrow">Try it now</p>
+          <label for="engraving">Engraving text<input id="engraving" value="MAZ" maxlength="16" autocomplete="off" /></label>
+          <p class="note">Preview uses the store's real product image. Finish, placement and colour remain configurable during installation.</p>
+          <div class="status" id="status" role="status">Loading product image…</div>
+          <p class="source">Demo target: rfidwallets.co.uk · Custom Engraved RFID Leather Wallet</p>
+        </div>
+      </section>
+    </main>
+    <script type="module">
+      import { createEngravingPreview } from './engraving.js';
+      const config = {
+        productImageUrl: 'https://cdn.shopify.com/s/files/1/0527/7253/6474/files/il_fullxfull.6310848555_1kls_1.jpg?v=1728216816',
+        engraving: { x: 0.48, y: 0.57, maxWidth: 0.34, colour: [48, 30, 20] },
+      };
+      const input = document.querySelector('#engraving');
+      const status = document.querySelector('#status');
+      try {
+        const preview = await createEngravingPreview(document.querySelector('#preview'), config);
+        const render = () => preview.render(input.value);
+        input.addEventListener('input', render);
+        render();
+        status.textContent = 'Preview ready — type a name.';
+      } catch (error) {
+        status.textContent = `Preview failed: ${error.message}`;
+      }
+    </script>
+  </body>
+</html>

@@ -1,0 +1,8 @@
+.git
+.vercel
+node_modules
+dist
+docs
+tasks
+src-tauri
+render-gate/index.html

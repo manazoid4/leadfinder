@@ -1,0 +1,10 @@
+{
+  "id": "local-engraving-preview",
+  "name": "Local engraving preview",
+  "industries": ["memorial masons", "trophy and awards engravers", "signage and vinyl", "workwear embroidery"],
+  "qualifiers": ["physical premises", "custom text or artwork", "public contact path", "no equivalent live preview"],
+  "offer": "Fixed-price preview setup after scope check",
+  "render": "engraving",
+  "discovery": "gosom",
+  "outreach": "{FirstName} — I mocked up a working preview for {Company}: {demo_url}\nCustomers can type their wording and see it on the product before they enquire. I build and install these end to end. If useful, reply and I'll show you the setup."
+}

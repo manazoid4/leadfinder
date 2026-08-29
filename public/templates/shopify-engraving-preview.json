@@ -1,0 +1,9 @@
+{
+  "id": "shopify-engraving-preview",
+  "name": "Shopify engraving preview",
+  "industries": ["personalised gifts", "leather goods"],
+  "qualifiers": ["Shopify", "sells personalisation", "independent", "no rejected preview-app fingerprint"],
+  "offer": "£150 end-to-end preview setup",
+  "render": "engraving",
+  "outreach": "{FirstName} — built you something, no pitch attached.\nBuyers can't see their engraving before they pay on your site. So I made a working version for your best-seller: {demo_url}\nOpen it on your phone, type a name.\nI'm Maz — I do this setup for UK Shopify stores end to end, so you don't have to pick through apps and wire it up. £150 to put it live properly. If it's not for you, keep the link."
+}
